@@ -1,0 +1,261 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 40% 98%;
+    --foreground: 224 71.4% 4.1%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+    --radius: 0.5rem;
+    --notion-font: inherit;
+    color-scheme: light;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 48%;
+    color-scheme: dark;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* テーマ切り替えアニメーション */
+:root * {
+  @apply transition-colors duration-300;
+}
+
+/* react-notion-xのスタイル上書き */
+.notion {
+  font-family: inherit !important;
+  color: hsl(var(--foreground)) !important;
+  background: transparent !important;
+}
+
+/* ダークモードの場合 */
+.dark .notion {
+  color: hsl(0, 0%, 90%) !important;
+}
+
+.notion-text {
+  color: hsl(var(--foreground)) !important;
+  line-height: 1.8 !important;
+  margin: 0.75em 0 !important;
+  letter-spacing: 0.01em !important;
+}
+
+.notion-page {
+  @apply !pb-20;
+  background: transparent !important;
+}
+
+.notion-title {
+  @apply !hidden;
+}
+
+.notion-page-cover {
+  @apply !hidden;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 70px; /* モバイル用のパディング */
+}
+
+/* デスクトップサイズ（1280px以上）でパディングを小さく */
+@media (min-width: 1280px) {
+  html {
+    scroll-padding-top: 12px;
+  }
+}
+
+/* Notionのコードブロックスタイル */
+.notion-code {
+  @apply font-mono text-[0.9em] leading-relaxed 
+    bg-slate-800 dark:bg-gray-900  /* ライトモードでも暗い背景 */
+    border border-slate-700 dark:border-gray-700 
+    shadow-md rounded-lg overflow-x-auto
+    text-slate-100  /* 明るいテキスト色 */
+    !important;
+  margin: 1.5em 0 !important;
+  padding: 1.8em !important;
+}
+
+/* シンタックスハイライトの色設定 */
+.notion-code .token {
+  @apply font-mono text-slate-100 !important; /* ベーステキストカラー */
+  background: none !important;
+}
+
+/* キーワード */
+.notion-code .keyword,
+.notion-code .tag,
+.notion-code .property {
+  @apply text-sky-300 font-semibold !important; /* 明るい青 */
+}
+
+/* 文字列 */
+.notion-code .string,
+.notion-code .attr-value {
+  @apply text-emerald-300 !important; /* 明るい緑 */
+}
+
+/* 関数名 */
+.notion-code .function {
+  @apply text-pink-300 !important; /* 明るいピンク */
+}
+
+/* 変数名 */
+.notion-code .variable {
+  @apply text-orange-300 !important; /* 明るいオレンジ */
+}
+
+/* コメント */
+.notion-code .comment {
+  @apply text-slate-400 italic !important; /* 薄めのグレー */
+}
+
+/* 数値 */
+.notion-code .number {
+  @apply text-purple-300 !important; /* 明るい紫 */
+}
+
+/* オペレーター */
+.notion-code .operator {
+  @apply text-blue-300 !important; /* 明るい青 */
+}
+
+/* コードブロックのスクロールバー */
+.notion-code::-webkit-scrollbar {
+  @apply h-2 w-2;
+}
+
+.notion-code::-webkit-scrollbar-track {
+  @apply bg-transparent rounded-full;
+}
+
+.notion-code::-webkit-scrollbar-thumb {
+  @apply bg-gray-400/50 rounded-full hover:bg-gray-400/70;
+}
+
+/* インラインコード */
+:not(pre) > code {
+  @apply bg-gray-100 dark:bg-gray-800 
+    text-gray-900 dark:text-gray-100 
+    px-2 py-1 rounded 
+    font-mono text-[0.9em] 
+    border border-gray-200 dark:border-gray-700
+    !important;
+}
+
+.notion-link {
+  color: hsl(var(--primary)) !important;
+  opacity: 1 !important;
+}
+
+.notion-bookmark {
+  border: 1px solid hsl(var(--border)) !important;
+  background: hsl(var(--card)) !important;
+  color: hsl(var(--card-foreground)) !important;
+}
+
+.notion-bookmark:hover {
+  background: hsl(var(--accent)) !important;
+}
+
+.notion-quote {
+  border-left: 3px solid hsl(var(--primary)) !important;
+  background: hsl(var(--muted)) !important;
+}
+
+.notion-h1,
+.notion-h2,
+.notion-h3 {
+  color: hsl(var(--foreground)) !important;
+  font-weight: 600 !important;
+}
+
+.notion-page-content {
+  padding: 0 0.5em;
+}
+
+/* 目次のスタイル */
+.notion-table-of-contents {
+  @apply fixed right-8 top-40 w-64 bg-background/80 backdrop-blur-sm p-4 rounded-lg border shadow-sm hidden xl:block !important;
+  max-height: calc(100vh - 12rem);
+  overflow-y: auto;
+}
+
+.notion-table-of-contents::-webkit-scrollbar {
+  width: 4px;
+}
+
+.notion-table-of-contents::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+.notion-table-of-contents::-webkit-scrollbar-thumb {
+  @apply bg-muted-foreground/20 rounded-full;
+}
+
+.notion-table-of-contents-item {
+  @apply text-muted-foreground hover:text-foreground transition-colors !important;
+  padding: 4px 0;
+  font-size: 0.9rem !important;
+  line-height: 1.4 !important;
+}
+
+.notion-table-of-contents-active-item {
+  @apply text-foreground font-bold !important;
+}
+
+/* 目次があるときのメインコンテンツのレイアウト調整 */
+.notion-page-content {
+  @apply xl:mr-80 !important;
+}
+
+/* Notionコンテンツのスタイル調整 */
+.notion-page {
+  @apply !pb-20;
+}
