@@ -102,137 +102,123 @@ function formatImageUrl(url: string, blockId: string) {
   return url;
 }
 
-//notion-api-worker and react-notion
+// notion-client (react-notion-x) ベースの実装
 export const getAllPosts = cache(async (): Promise<Post[]> => {
   try {
-    const res = await fetch(`${NOTION_API_BASE}/table/${NOTION_PAGE_ID}`, {
-      next: { revalidate: 10 },
-    });
+    const recordMap = await notion.getPage(NOTION_PAGE_ID);
 
-    if (!res.ok) {
-      throw new Error(`Failed to fetch posts: ${res.status}`);
+    // collection（データベース）スキーマを取得
+    const collection = Object.values(recordMap.collection ?? {})[0]?.value as
+      | any
+      | undefined;
+    if (!collection) {
+      throw new Error("No collection found in the page");
     }
 
-    const posts = await res.json();
+    // プロパティ名 -> プロパティID のマップを構築
+    const schema: Record<string, { name: string; type: string }> =
+      collection.schema || {};
+    const propIdByName: Record<string, string> = {};
+    for (const [propId, prop] of Object.entries(schema)) {
+      propIdByName[prop.name] = propId;
+    }
 
-    // 各投稿のページ情報を取得してカバー画像を取得
-    const postsWithCover = await Promise.all(
-      posts
-        .filter((post: any) => post.Public)
-        .map(async (post: any) => {
-          const pageRes = await fetch(`${NOTION_API_BASE}/page/${post.id}`);
-          const page = await pageRes.json();
+    // properties の値を文字列として取り出すヘルパ
+    const getProp = (block: any, name: string): string | undefined => {
+      const propId = propIdByName[name];
+      if (!propId) return undefined;
+      const raw = block?.properties?.[propId];
+      if (!raw || !Array.isArray(raw)) return undefined;
+      return raw.map((r: any[]) => r[0]).join("");
+    };
 
-          // ページの最初のブロックを取得し、その値を確認
-          const firstBlock = Object.values(page).find(
-            (block): block is NotionBlock =>
-              (block as NotionBlock)?.value?.type === "page"
-          );
+    // collection 配下の page ブロックを抽出
+    const pageBlocks = Object.values(recordMap.block)
+      .map((b: any) => b?.value)
+      .filter(
+        (v: any) =>
+          v &&
+          v.type === "page" &&
+          v.parent_table === "collection" &&
+          v.parent_id === collection.id
+      );
 
-          // カバー画像の処理を修正
-          let coverImage = "/default-cover.jpg";
-          if (firstBlock?.value?.format?.page_cover) {
-            const coverUrl = firstBlock.value.format.page_cover;
-            if (coverUrl.startsWith("https://prod-files-secure")) {
-              // S3のURLの場合
-              coverImage = `https://www.notion.so/image/${encodeURIComponent(
-                coverUrl
-              )}?table=block&id=${post.id}&width=3840`;
-            } else if (coverUrl.startsWith("/images")) {
-              // Notionの内部画像の場合
-              coverImage = `https://www.notion.so${coverUrl}`;
-            } else {
-              // その他のURLの場合
-              coverImage = `https://www.notion.so/image/${encodeURIComponent(
-                coverUrl
-              )}?table=block&id=${post.id}&width=3840`;
-            }
+    const posts: Post[] = pageBlocks
+      .map((block: any): Post | null => {
+        // Public フィルタ（チェックボックスは "Yes" 文字列）
+        if (getProp(block, "Public") !== "Yes") return null;
+
+        const title = getProp(block, "Name") || "無題";
+        const slug = getProp(block, "Slug") || `untitled-${block.id}`;
+        const published = getProp(block, "Published");
+        const date = published
+          ? new Date(published).toISOString().split("T")[0]
+          : new Date().toISOString().split("T")[0];
+        const description = getProp(block, "Description") || "";
+        const author = getProp(block, "Author") || "匿名";
+        const authorBio = getProp(block, "AuthorBio") || "";
+        const tagsRaw = getProp(block, "Tags") || "";
+        const tags = tagsRaw
+          ? tagsRaw.split(",").map((t) => t.trim()).filter(Boolean)
+          : [];
+        const featured = getProp(block, "Featured") === "Yes";
+
+        // カバー画像
+        let coverImage = "/default-cover.jpg";
+        const coverUrl: string | undefined = block?.format?.page_cover;
+        if (coverUrl) {
+          if (coverUrl.startsWith("/images")) {
+            coverImage = `https://www.notion.so${coverUrl}`;
+          } else {
+            coverImage = `https://www.notion.so/image/${encodeURIComponent(
+              coverUrl
+            )}?table=block&id=${block.id}&width=3840`;
           }
+        }
 
-          // アイコンの処理
-          let icon = null;
-          if (firstBlock?.value?.format?.page_icon) {
-            const pageIcon = firstBlock.value.format.page_icon;
-            if (
-              pageIcon.length === 1 ||
-              pageIcon.length === 2 ||
-              pageIcon.startsWith("🏺") // 絵文字の場合
-            ) {
-              // 絵文字の場合
+        // アイコン
+        let icon: string | null = null;
+        const pageIcon: string | undefined = block?.format?.page_icon;
+        if (pageIcon) {
+          if (pageIcon.length <= 2 || pageIcon.startsWith("🏺")) {
+            icon = pageIcon;
+          } else if (pageIcon.startsWith("http")) {
+            icon = pageIcon;
+          } else if (pageIcon.includes("notion.so")) {
+            try {
+              icon = decodeURIComponent(pageIcon);
+            } catch {
               icon = pageIcon;
-            } else if (pageIcon.startsWith("http")) {
-              // 画像URLの場合
-              icon = pageIcon;
-            } else if (pageIcon.includes("notion.so")) {
-              // Notion内部の絵文字URLの場合
-              try {
-                const decodedIcon = decodeURIComponent(pageIcon);
-                if (decodedIcon.startsWith("🏺")) {
-                  icon = decodedIcon;
-                } else {
-                  icon = pageIcon;
-                }
-              } catch {
-                icon = pageIcon;
-              }
             }
           }
+        }
 
-          // アイコンの処理
-          let authorImage = post.AuthorImage || "/default-avatar.png";
-          if (firstBlock?.value?.format?.page_icon) {
-            const pageIcon = firstBlock.value.format.page_icon;
-            if (
-              pageIcon.length === 1 ||
-              pageIcon.length === 2 ||
-              pageIcon.startsWith("🏺") // 絵文字の場合
-            ) {
-              // 絵文字の場合
-              authorImage = pageIcon;
-            } else if (pageIcon.startsWith("http")) {
-              // 画像URLの場合
-              authorImage = pageIcon;
-            } else if (pageIcon.includes("notion.so")) {
-              // Notion内部の絵文字URLの場合
-              try {
-                const decodedIcon = decodeURIComponent(pageIcon);
-                if (decodedIcon.startsWith("🏺")) {
-                  authorImage = decodedIcon;
-                } else {
-                  authorImage = pageIcon;
-                }
-              } catch {
-                authorImage = pageIcon;
-              }
-            }
-          }
+        const authorImage =
+          getProp(block, "AuthorImage") ||
+          (icon && icon.startsWith("http") ? icon : "/default-avatar.png");
 
-          const date = post.Published
-            ? new Date(post.Published).toISOString().split("T")[0]
-            : new Date().toISOString().split("T")[0];
+        return {
+          id: block.id,
+          title,
+          slug,
+          date,
+          author: {
+            name: author,
+            image: authorImage,
+            bio: authorBio,
+          },
+          coverImage,
+          tags,
+          description,
+          excerpt: description,
+          content: "",
+          featured,
+          icon,
+        };
+      })
+      .filter((p): p is Post => p !== null);
 
-          return {
-            id: post.id,
-            title: post.Name || "無題",
-            slug: post.Slug || `untitled-${post.id}`,
-            date,
-            author: {
-              name: post.Author || "匿名",
-              image: authorImage,
-              bio: post.AuthorBio || "",
-            },
-            coverImage,
-            tags: Array.isArray(post.Tags) ? post.Tags : [],
-            description: post.Description || "",
-            excerpt: post.Description || "",
-            content: "",
-            featured: post.Featured || false,
-            icon,
-          };
-        })
-    );
-
-    return postsWithCover.sort((a, b) => {
+    return posts.sort((a, b) => {
       if (a.featured && !b.featured) return -1;
       if (!a.featured && b.featured) return 1;
       return new Date(b.date).getTime() - new Date(a.date).getTime();
