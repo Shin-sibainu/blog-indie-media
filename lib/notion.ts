@@ -1,33 +1,5 @@
-// https://splitbee.io/blog/notion-as-cms-using-nextjs
-// Notionデータ取得用の関数を改善
-import { NotionAPI } from "notion-client";
-import { getPageImageUrls } from "notion-utils";
+// ダミーデータ実装。Notion APIには接続せず、固定データを返します。
 import { cache } from "react";
-
-const NOTION_API_BASE = "https://notion-api.splitbee.io/v1";
-const NOTION_PAGE_ID = process.env.NOTION_PAGE_ID as string;
-const NOTION_PROFILE_ID = process.env.NOTION_PROFILE_ID as string;
-
-const notion = new NotionAPI();
-
-interface NotionBlock {
-  value: {
-    type: string;
-    format?: {
-      page_cover?: string;
-      page_icon?: string;
-    };
-    properties?: {
-      title?: string[][];
-      description?: string[][];
-      role?: string[][];
-      twitter?: string[][];
-      github?: string[][];
-      linkedin?: string[][];
-      skills?: string[][];
-    };
-  };
-}
 
 export interface Post {
   id: string;
@@ -62,428 +34,321 @@ export interface Profile {
   content: any;
 }
 
-// Notionの画像URLを適切な形式に変換する関数
-function formatImageUrl(url: string, blockId: string) {
-  if (!url) return "/default-cover.jpg";
+const authors = {
+  tanaka: {
+    name: "田中太郎",
+    image:
+      "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=400",
+    bio: "10年以上のWeb開発経験を持つシニアエンジニア。モダンな技術スタックを得意としています。",
+  },
+  yamada: {
+    name: "山田花子",
+    image:
+      "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&q=80&w=400",
+    bio: "UI/UXデザイナー。美しく機能的なインターフェースデザインを追求しています。",
+  },
+  suzuki: {
+    name: "鈴木一郎",
+    image:
+      "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80&w=400",
+    bio: "AI・機械学習専門のソフトウェアエンジニア。最新技術のリサーチと開発に携わっています。",
+  },
+  sato: {
+    name: "佐藤美咲",
+    image:
+      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=400",
+    bio: "旅するフォトグラファー。世界中の風景や文化を写真で切り取っています。",
+  },
+};
 
-  // attachmentスキームの処理
-  if (url.startsWith("attachment:")) {
-    const attachmentId = url.split(":")[1].split(":")[0];
-    return `https://www.notion.so/image/${encodeURIComponent(
-      `https://prod-files-secure.s3.us-west-2.amazonaws.com/${attachmentId}`
-    )}?table=block&id=${blockId}&width=3840`;
-  }
+const dummyPosts: Post[] = [
+  {
+    id: "1",
+    title: "Web開発の未来：AIとノーコードツールの台頭",
+    slug: "future-of-web-development",
+    description:
+      "人工知能とノーコードプラットフォームが、Web開発の世界をどのように変革しているのかを探ります。",
+    excerpt:
+      "人工知能とノーコードプラットフォームが、Web開発の世界をどのように変革しているのかを探ります。",
+    content: `# Web開発の未来
 
-  // signed URLの処理
-  if (url.includes("/signed/")) {
-    const signedId = url.split("/signed/")[1].split("?")[0];
-    return `https://www.notion.so/image/${encodeURIComponent(
-      `https://prod-files-secure.s3.us-west-2.amazonaws.com/${signedId}`
-    )}?table=block&id=${blockId}&width=3840`;
-  }
+AIツールとノーコードプラットフォームの登場により、Web開発の世界は大きく変わりつつあります。この変化は開発をより身近なものにすると同時に、プロの開発者に新たな機会をもたらしています。
 
-  if (url.startsWith("/images")) {
-    return `https://www.notion.so${url}`;
-  }
+## AIの台頭
 
-  if (url.startsWith("https://prod-files-secure")) {
-    return `https://www.notion.so/image/${encodeURIComponent(
-      url
-    )}?table=block&id=${blockId}&width=3840`;
-  }
+人工知能は、コード補完から自動テストまで、開発ワークフローの様々な側面で革新をもたらしています。
 
-  // 外部URLの場合
-  if (url.startsWith("http")) {
-    return `https://www.notion.so/image/${encodeURIComponent(
-      url
-    )}?table=block&id=${blockId}&width=3840`;
-  }
+## ノーコード革命
 
-  return url;
-}
+ノーコードプラットフォームにより、技術的な知識がなくても高度なWebアプリケーションの作成が可能になっています。
 
-// notion-client (react-notion-x) ベースの実装
+## 開発者への影響
+
+1. より高度な問題解決への注力
+2. 生産性の向上
+3. 新しい専門分野の出現
+4. アーキテクチャとデザインの重要性増大
+
+## まとめ
+
+Web開発の未来は可能性に満ちています。ツールや技術は進化し続けますが、基本原則を理解した熟練開発者の需要は依然として高いままです。`,
+    coverImage:
+      "https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?auto=format&fit=crop&q=80&w=1000",
+    date: "2024-03-21",
+    tags: ["テクノロジー", "プログラミング"],
+    author: authors.tanaka,
+    featured: true,
+    icon: "🚀",
+  },
+  {
+    id: "2",
+    title: "モダンUIデザインの基本原則を学ぶ",
+    slug: "mastering-modern-ui-design",
+    description:
+      "現代のUIデザイン原則と、その効果的な適用方法について詳しく解説します。",
+    excerpt:
+      "現代のUIデザイン原則と、その効果的な適用方法について詳しく解説します。",
+    content: `# モダンUIデザインの基礎
+
+直感的で美しいユーザーインターフェースを作るには、デザイン原則とユーザー心理の深い理解が必要です。
+
+## 重要なデザイン原則
+
+1. 視覚的階層
+2. 余白の活用
+3. 色彩理論
+4. タイポグラフィ
+5. 一貫性
+
+## 実践的な応用
+
+これらの原則を実際のプロジェクトでどのように活用するかを学びます。`,
+    coverImage:
+      "https://images.unsplash.com/photo-1513542789411-b6a5d4f31634?auto=format&fit=crop&q=80&w=1000",
+    date: "2024-03-20",
+    tags: ["デザイン", "テクノロジー"],
+    author: authors.yamada,
+    featured: false,
+    icon: "🎨",
+  },
+  {
+    id: "3",
+    title: "京都の隠れた絶景スポットを巡る",
+    slug: "exploring-kyoto-photography",
+    description: "古都京都の知られざる絶景ポイントと、その魅力を写真で紹介します。",
+    excerpt: "古都京都の知られざる絶景ポイントと、その魅力を写真で紹介します。",
+    content: `# 京都の隠れた絶景スポット
+
+千年の歴史を持つ古都の隠れた名所を、写真を通じて巡る旅へご案内します。
+
+## 古寺と庭園
+
+静寂に包まれた古寺と、手入れの行き届いた日本庭園の魅力。
+
+## 路地裏の風景
+
+観光客があまり訪れない、京都の路地裏に残る昔ながらの風景。`,
+    coverImage:
+      "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&q=80&w=1000",
+    date: "2024-03-19",
+    tags: ["写真", "旅行"],
+    author: authors.sato,
+    featured: false,
+    icon: "📷",
+  },
+  {
+    id: "4",
+    title: "はじめての機械学習：基礎から応用まで",
+    slug: "machine-learning-fundamentals",
+    description:
+      "機械学習の基本概念から実践的な応用まで、初心者にもわかりやすく解説します。",
+    excerpt:
+      "機械学習の基本概念から実践的な応用まで、初心者にもわかりやすく解説します。",
+    content: `# 機械学習の基礎
+
+機械学習は様々な産業で革新をもたらしています。この記事では、基本概念から応用まで解説します。
+
+## 重要な概念
+
+1. 教師あり学習
+2. 教師なし学習
+3. ニューラルネットワーク
+4. ディープラーニング
+
+## 実践的な応用例
+
+実際のビジネスでの機械学習の活用事例を紹介します。`,
+    coverImage:
+      "https://images.unsplash.com/photo-1555949963-ff9fe0c870eb?auto=format&fit=crop&q=80&w=1000",
+    date: "2024-03-18",
+    tags: ["テクノロジー", "プログラミング"],
+    author: authors.suzuki,
+    featured: false,
+    icon: "🤖",
+  },
+  {
+    id: "5",
+    title: "ミニマリストライフのすすめ",
+    slug: "art-of-minimalist-living",
+    description: "物を減らすことで得られる、より充実した暮らしについて考えます。",
+    excerpt: "物を減らすことで得られる、より充実した暮らしについて考えます。",
+    content: `# ミニマリストライフの実践
+
+ミニマリズムは単に物を減らすことではなく、本当に大切なものに集中する生き方です。
+
+## ミニマリズムのメリット
+
+1. ストレス軽減
+2. 集中力の向上
+3. 環境への配慮
+4. 経済的な自由
+
+## 始め方
+
+ミニマリストライフを始めるための具体的なステップを紹介します。`,
+    coverImage:
+      "https://images.unsplash.com/photo-1494438639946-1ebd1d20bf85?auto=format&fit=crop&q=80&w=1000",
+    date: "2024-03-17",
+    tags: ["ライフスタイル"],
+    author: authors.yamada,
+    featured: false,
+    icon: "🌿",
+  },
+  {
+    id: "6",
+    title: "スケーラブルなWebアプリケーションの構築",
+    slug: "building-scalable-web-applications",
+    description:
+      "数百万人規模のユーザーに対応できるWebアプリケーションの設計原則を解説します。",
+    excerpt:
+      "数百万人規模のユーザーに対応できるWebアプリケーションの設計原則を解説します。",
+    content: `# スケーラブルなWebアプリケーション開発
+
+成長に対応できるアプリケーションを作るには、適切な設計と判断が重要です。
+
+## 重要な原則
+
+1. マイクロサービスアーキテクチャ
+2. キャッシュ戦略
+3. データベース最適化
+4. 負荷分散
+
+## ベストプラクティス
+
+実装のガイドラインと実例を紹介します。`,
+    coverImage:
+      "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=1000",
+    date: "2024-03-16",
+    tags: ["プログラミング", "テクノロジー"],
+    author: authors.tanaka,
+    featured: false,
+    icon: "⚡",
+  },
+  {
+    id: "7",
+    title: "環境に優しいWebデザインの実践",
+    slug: "sustainable-web-design",
+    description:
+      "美しいWebサイトを作りながら、環境負荷を最小限に抑える方法を探ります。",
+    excerpt:
+      "美しいWebサイトを作りながら、環境負荷を最小限に抑える方法を探ります。",
+    content: `# 環境に配慮したWebデザイン
+
+Webデザインの選択が環境に与える影響について考え、持続可能なデジタル体験を作る方法を学びます。
+
+## 重要なポイント
+
+1. パフォーマンス最適化
+2. グリーンホスティング
+3. 効率的なアセット管理
+4. 持続可能なUXパターン
+
+## 実装ガイド
+
+より環境に優しいWebプロジェクトを作るための具体的なステップを紹介します。`,
+    coverImage:
+      "https://images.unsplash.com/photo-1542831371-29b0f74f9713?auto=format&fit=crop&q=80&w=1000",
+    date: "2024-03-15",
+    tags: ["デザイン", "テクノロジー"],
+    author: authors.yamada,
+    featured: false,
+    icon: "🌱",
+  },
+  {
+    id: "8",
+    title: "都市の日常を切り取る：スナップ写真の技法",
+    slug: "street-photography-guide",
+    description:
+      "都市での印象的なスナップ写真を撮影するためのテクニックとコツを紹介します。",
+    excerpt:
+      "都市での印象的なスナップ写真を撮影するためのテクニックとコツを紹介します。",
+    content: `# スナップ写真撮影ガイド
+
+都市の日常の一瞬を切り取る技術を学びましょう。
+
+## 基本テクニック
+
+1. 構図のルール
+2. 光の扱い方
+3. タイミングと忍耐
+4. 機材選び
+
+## 上級テクニック
+
+スナップ写真をより印象的なものにするためのテクニックを紹介します。`,
+    coverImage:
+      "https://images.unsplash.com/photo-1476801071117-fbc157ae3f01?auto=format&fit=crop&q=80&w=1000",
+    date: "2024-03-14",
+    tags: ["写真", "ライフスタイル"],
+    author: authors.sato,
+    featured: false,
+    icon: "🏙️",
+  },
+];
+
+const dummyDatabase = {
+  icon: "📝",
+  cover: undefined as string | undefined,
+  title: "Indie_Dev_Media",
+  coverPosition: 0.5,
+  author: "クラシックチーム",
+  site: undefined as string | undefined,
+  description:
+    "テクノロジー、デザイン、ライフスタイルについての考えやアイデアを共有するモダンなブログ。",
+};
+
+const dummyProfile: Profile = {
+  name: "クラシックチーム",
+  bio: "知識と経験を共有することに情熱を持つライターとクリエイターのチームです。テクノロジー、デザイン、ライフスタイルについて発信しています。",
+  avatar:
+    "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=400",
+  role: "Editorial Team",
+  social: {
+    twitter: "https://twitter.com",
+    github: "https://github.com",
+    linkedin: "https://linkedin.com",
+  },
+  skills: ["Next.js", "TypeScript", "UI/UX", "Writing"],
+  content: null,
+};
+
 export const getAllPosts = cache(async (): Promise<Post[]> => {
-  try {
-    const recordMap = await notion.getPage(NOTION_PAGE_ID);
-
-    // collection（データベース）スキーマを取得
-    const collection = Object.values(recordMap.collection ?? {})[0]?.value as
-      | any
-      | undefined;
-    if (!collection) {
-      throw new Error("No collection found in the page");
-    }
-
-    // プロパティ名 -> プロパティID のマップを構築
-    const schema: Record<string, { name: string; type: string }> =
-      collection.schema || {};
-    const propIdByName: Record<string, string> = {};
-    for (const [propId, prop] of Object.entries(schema)) {
-      propIdByName[prop.name] = propId;
-    }
-
-    // properties の値を文字列として取り出すヘルパ
-    const getProp = (block: any, name: string): string | undefined => {
-      const propId = propIdByName[name];
-      if (!propId) return undefined;
-      const raw = block?.properties?.[propId];
-      if (!raw || !Array.isArray(raw)) return undefined;
-      return raw.map((r: any[]) => r[0]).join("");
-    };
-
-    // collection 配下の page ブロックを抽出
-    const pageBlocks = Object.values(recordMap.block)
-      .map((b: any) => b?.value)
-      .filter(
-        (v: any) =>
-          v &&
-          v.type === "page" &&
-          v.parent_table === "collection" &&
-          v.parent_id === collection.id
-      );
-
-    const posts: Post[] = pageBlocks
-      .map((block: any): Post | null => {
-        // Public フィルタ（チェックボックスは "Yes" 文字列）
-        if (getProp(block, "Public") !== "Yes") return null;
-
-        const title = getProp(block, "Name") || "無題";
-        const slug = getProp(block, "Slug") || `untitled-${block.id}`;
-        const published = getProp(block, "Published");
-        const date = published
-          ? new Date(published).toISOString().split("T")[0]
-          : new Date().toISOString().split("T")[0];
-        const description = getProp(block, "Description") || "";
-        const author = getProp(block, "Author") || "匿名";
-        const authorBio = getProp(block, "AuthorBio") || "";
-        const tagsRaw = getProp(block, "Tags") || "";
-        const tags = tagsRaw
-          ? tagsRaw.split(",").map((t) => t.trim()).filter(Boolean)
-          : [];
-        const featured = getProp(block, "Featured") === "Yes";
-
-        // カバー画像
-        let coverImage = "/default-cover.jpg";
-        const coverUrl: string | undefined = block?.format?.page_cover;
-        if (coverUrl) {
-          if (coverUrl.startsWith("/images")) {
-            coverImage = `https://www.notion.so${coverUrl}`;
-          } else {
-            coverImage = `https://www.notion.so/image/${encodeURIComponent(
-              coverUrl
-            )}?table=block&id=${block.id}&width=3840`;
-          }
-        }
-
-        // アイコン
-        let icon: string | null = null;
-        const pageIcon: string | undefined = block?.format?.page_icon;
-        if (pageIcon) {
-          if (pageIcon.length <= 2 || pageIcon.startsWith("🏺")) {
-            icon = pageIcon;
-          } else if (pageIcon.startsWith("http")) {
-            icon = pageIcon;
-          } else if (pageIcon.includes("notion.so")) {
-            try {
-              icon = decodeURIComponent(pageIcon);
-            } catch {
-              icon = pageIcon;
-            }
-          }
-        }
-
-        const authorImage =
-          getProp(block, "AuthorImage") ||
-          (icon && icon.startsWith("http") ? icon : "/default-avatar.png");
-
-        return {
-          id: block.id,
-          title,
-          slug,
-          date,
-          author: {
-            name: author,
-            image: authorImage,
-            bio: authorBio,
-          },
-          coverImage,
-          tags,
-          description,
-          excerpt: description,
-          content: "",
-          featured,
-          icon,
-        };
-      })
-      .filter((p): p is Post => p !== null);
-
-    return posts.sort((a, b) => {
-      if (a.featured && !b.featured) return -1;
-      if (!a.featured && b.featured) return 1;
-      return new Date(b.date).getTime() - new Date(a.date).getTime();
-    });
-  } catch (error) {
-    console.error("Error fetching all posts:", error);
-    return [];
-  }
+  return [...dummyPosts].sort((a, b) => {
+    if (a.featured && !b.featured) return -1;
+    if (!a.featured && b.featured) return 1;
+    return new Date(b.date).getTime() - new Date(a.date).getTime();
+  });
 });
 
-export const getPostBySlug = cache(async (slug: string) => {
-  try {
-    const posts = await getAllPosts();
-    const post = posts.find((p: any) => p.slug === slug);
-
-    if (!post || !post.title) return null;
-
-    // NotionAPIを使用してrecordMapを取得
-    const recordMap = await notion.getPage(post.id);
-
-    // アイコンの取得
-    const block = Object.values(recordMap.block)[0]?.value;
-    let icon = null;
-
-    if (block?.format?.page_icon) {
-      const pageIcon = block.format.page_icon;
-      if (
-        pageIcon.length === 1 ||
-        pageIcon.length === 2 ||
-        pageIcon.startsWith("🏺") // 絵文字の場合
-      ) {
-        // 絵文字の場合
-        icon = pageIcon;
-      } else if (pageIcon.startsWith("http")) {
-        // 画像URLの場合
-        icon = pageIcon;
-      } else if (pageIcon.includes("notion.so")) {
-        // Notion内部の絵文字URLの場合
-        try {
-          const decodedIcon = decodeURIComponent(pageIcon);
-          if (decodedIcon.startsWith("🏺")) {
-            icon = decodedIcon;
-          } else {
-            icon = pageIcon;
-          }
-        } catch {
-          icon = pageIcon;
-        }
-      }
-    }
-
-    return {
-      ...post,
-      content: recordMap,
-      icon,
-    };
-  } catch (error) {
-    console.error(`Error fetching post with slug ${slug}:`, error);
-    return null;
-  }
+export const getPostBySlug = cache(async (slug: string): Promise<Post | null> => {
+  const post = dummyPosts.find((p) => p.slug === slug);
+  return post ?? null;
 });
 
-// react-notion-x
 export const getDatabase = cache(async () => {
-  try {
-    const recordMap = await notion.getPage(NOTION_PAGE_ID);
-
-    getPageImageUrls(recordMap, {
-      mapImageUrl: (url: string, block: any) => {
-        if (url.startsWith("/images")) {
-          return `https://www.notion.so${url}`;
-        }
-
-        if (url.startsWith("https://prod-files-secure")) {
-          const encoded = encodeURIComponent(url);
-          return `https://www.notion.so/image/${encoded}?table=block&id=${block.id}&cache=v2`;
-        }
-
-        return url;
-      },
-    });
-
-    const block = Object.values(recordMap.block)[0]?.value;
-
-    if (!block) {
-      throw new Error("No block data found");
-    }
-
-    // アイコンの処理を修正
-    let icon;
-    if (block?.format?.page_icon) {
-      // 絵文字の場合は直接その文字を使用
-      if (
-        block.format.page_icon.length === 1 ||
-        block.format.page_icon.length === 2
-      ) {
-        icon = block.format.page_icon; // 絵文字をそのまま返す
-      } else {
-        // 画像URLの場合は変換処理
-        icon = `https://www.notion.so/image/${encodeURIComponent(
-          block.format.page_icon
-        )}?table=block&id=${block.id}&cache=v2`;
-      }
-    }
-
-    // データベースのプロパティから追加情報を取得
-    const properties = block?.properties || {};
-    const author = properties.author?.[0]?.[0];
-    const site = properties.site?.[0]?.[0];
-
-    // descriptionの取得を試みる
-    // 1. プロパティからの取得
-    let description = properties.description?.[0]?.[0];
-
-    // 2. プロパティになければ、最初のテキストブロックを探す
-    if (!description) {
-      const blocks = Object.values(recordMap.block);
-      const textBlock = blocks.find(
-        (block) =>
-          block?.value?.type === "text" &&
-          block?.value?.properties?.title?.[0]?.[0]
-      );
-      description = textBlock?.value?.properties?.title?.[0]?.[0];
-    }
-
-    const result = {
-      icon,
-      cover: block?.format?.page_cover
-        ? block.format.page_cover.startsWith("/images")
-          ? `https://www.notion.so${block.format.page_cover}`
-          : block.format.page_cover
-        : undefined,
-      title: block?.properties?.title?.[0]?.[0] || undefined,
-      coverPosition: block?.format?.page_cover_position || 0.5,
-      // 追加の情報
-      author,
-      site,
-      description:
-        description || "A classic blog template built with Next.js and Notion", // デフォルト値を設定
-    };
-
-    return result;
-  } catch (error) {
-    console.error("Failed to fetch database:", error);
-    return {
-      icon: undefined,
-      cover: undefined,
-      title: "Minimalist",
-      coverPosition: 0.5,
-      author: undefined,
-      site: undefined,
-      description: "A classic blog template built with Next.js and Notion",
-    };
-  }
+  return dummyDatabase;
 });
 
 export const getProfile = cache(async (): Promise<Profile> => {
-  try {
-    // メインページからコンテンツを取得
-    const recordMap = await notion.getPage(NOTION_PAGE_ID);
-
-    // 画像URLを適切に処理
-    getPageImageUrls(recordMap, {
-      mapImageUrl: (url: string, block: any) => {
-        if (url.startsWith("/images")) {
-          return `https://www.notion.so${url}`;
-        }
-
-        if (url.startsWith("https://prod-files-secure")) {
-          const encoded = encodeURIComponent(url);
-          return `https://www.notion.so/image/${encoded}?table=block&id=${block.id}&cache=v2`;
-        }
-
-        return url;
-      },
-    });
-
-    // プロフィールページのブロックを探す
-    const blocks = Object.values(recordMap.block);
-    const profileBlock = blocks.find((block) => {
-      const value = block?.value;
-      if (!value) return false;
-
-      // より広範な検索条件を設定
-      const text = JSON.stringify(value);
-      const hasProfileText =
-        text.includes("Profile") ||
-        text.includes("プロフィール") ||
-        text.includes("1801dcf229c28113a9e0d9080a7b9319");
-
-      return hasProfileText;
-    });
-
-    if (!profileBlock) {
-      throw new Error("Profile block not found in the main page");
-    }
-
-    // プロフィールページのIDを取得
-    const profileId = profileBlock.value.id;
-
-    // プロフィールページの内容を取得
-    const profileRecordMap = await notion.getPage(profileId);
-
-    // SNSリンクを探す
-    const socialLinks = Object.values(profileRecordMap.block).reduce(
-      (acc: any, block) => {
-        const value = block?.value;
-        if (!value || value.type !== "text") return acc;
-
-        const text = JSON.stringify(value.properties || {});
-
-        // TwitterリンクをチェックしてURLを抽出
-        if (text.includes("Twitter") || text.includes("twitter.com")) {
-          const match = text.match(/https:\/\/twitter\.com\/[^\s"]+/);
-          if (match) acc.twitter = match[0];
-        }
-
-        // GitHubリンクをチェックしてURLを抽出
-        if (text.includes("GitHub") || text.includes("github.com")) {
-          const match = text.match(/https:\/\/github\.com\/[^\s"]+/);
-          if (match) acc.github = match[0];
-        }
-
-        // LinkedInリンクをチェックしてURLを抽出
-        if (text.includes("LinkedIn") || text.includes("linkedin.com")) {
-          const match = text.match(/https:\/\/[^\s"]*linkedin\.com[^\s"]+/);
-          if (match) acc.linkedin = match[0];
-        }
-
-        return acc;
-      },
-      {}
-    );
-
-    // ページの基本情報を取得
-    const block = Object.values(profileRecordMap.block)[0]?.value;
-    const pageTitle = block?.properties?.title?.[0]?.[0] || "Profile";
-
-    return {
-      name: pageTitle,
-      bio: "",
-      avatar: "/default-avatar.png",
-      role: "",
-      social: {
-        twitter: socialLinks.twitter || "",
-        github: socialLinks.github || "",
-        linkedin: socialLinks.linkedin || "",
-      },
-      skills: [],
-      content: profileRecordMap,
-    };
-  } catch (error) {
-    console.error("Failed to fetch profile:", error);
-    return {
-      name: "名前未設定",
-      bio: "",
-      avatar: "/default-avatar.png",
-      role: "役職未設定",
-      social: {
-        twitter: "",
-        github: "",
-        linkedin: "",
-      },
-      skills: [],
-      content: null,
-    };
-  }
+  return dummyProfile;
 });

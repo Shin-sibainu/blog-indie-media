@@ -4,13 +4,98 @@ import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { formatDate } from "@/lib/utils";
 import { getPostBySlug, getAllPosts } from "@/lib/notion";
-import dynamic from "next/dynamic";
 import { Metadata } from "next";
+import { Fragment, ReactNode } from "react";
 
-const NotionContent = dynamic(
-  () => import("@/components/notion/NotionContent"),
-  { ssr: false }
-);
+// 簡易マークダウンレンダラ。ダミーデータが使う #/##/番号付きリスト/段落のみ対応。
+function renderMarkdown(source: string): ReactNode {
+  const lines = source.split("\n");
+  const blocks: ReactNode[] = [];
+  let listBuffer: string[] = [];
+  let paragraphBuffer: string[] = [];
+
+  const flushList = () => {
+    if (listBuffer.length === 0) return;
+    blocks.push(
+      <ol
+        key={`ol-${blocks.length}`}
+        className="my-4 ml-6 list-decimal space-y-2 text-foreground"
+      >
+        {listBuffer.map((item, i) => (
+          <li key={i} className="leading-relaxed">
+            {item}
+          </li>
+        ))}
+      </ol>
+    );
+    listBuffer = [];
+  };
+
+  const flushParagraph = () => {
+    if (paragraphBuffer.length === 0) return;
+    blocks.push(
+      <p
+        key={`p-${blocks.length}`}
+        className="my-4 leading-relaxed text-foreground"
+      >
+        {paragraphBuffer.join(" ")}
+      </p>
+    );
+    paragraphBuffer = [];
+  };
+
+  const flushAll = () => {
+    flushList();
+    flushParagraph();
+  };
+
+  for (const raw of lines) {
+    const line = raw.trimEnd();
+
+    if (line.startsWith("## ")) {
+      flushAll();
+      blocks.push(
+        <h2
+          key={`h2-${blocks.length}`}
+          className="mt-10 mb-4 text-2xl font-bold tracking-tight text-foreground"
+        >
+          {line.slice(3)}
+        </h2>
+      );
+      continue;
+    }
+    if (line.startsWith("# ")) {
+      flushAll();
+      blocks.push(
+        <h1
+          key={`h1-${blocks.length}`}
+          className="mt-12 mb-6 text-3xl font-bold tracking-tight text-foreground"
+        >
+          {line.slice(2)}
+        </h1>
+      );
+      continue;
+    }
+
+    const orderedMatch = line.match(/^\d+\.\s+(.*)$/);
+    if (orderedMatch) {
+      flushParagraph();
+      listBuffer.push(orderedMatch[1]);
+      continue;
+    }
+
+    if (line.trim() === "") {
+      flushAll();
+      continue;
+    }
+
+    flushList();
+    paragraphBuffer.push(line);
+  }
+  flushAll();
+
+  return <Fragment>{blocks}</Fragment>;
+}
 
 export async function generateMetadata({
   params,
@@ -129,7 +214,7 @@ export default async function PostPage({
           </div>
         </div>
         <div className="prose prose-slate dark:prose-invert mt-8 max-w-none">
-          <NotionContent content={post.content} showTableOfContents={true} />
+          {typeof post.content === "string" ? renderMarkdown(post.content) : null}
         </div>
       </div>
     </div>

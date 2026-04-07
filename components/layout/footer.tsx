@@ -11,7 +11,7 @@ export async function Footer() {
         <div className="flex flex-col items-center justify-between py-10 md:flex-row">
           <div className="text-center md:text-left">
             <p className="text-sm text-muted-foreground">
-              © {new Date().getFullYear()} Classic Blog. All rights reserved.
+              © {new Date().getFullYear()} Indie_Dev_Media. All rights reserved.
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
               Built with{" "}

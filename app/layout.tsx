@@ -17,7 +17,7 @@ async function generateMetadata(): Promise<Metadata> {
   const dbInfo = await getDatabase();
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
-  const title = dbInfo.title || "Classic";
+  const title = dbInfo.title || "Indie_Dev_Media";
   const description = dbInfo.description;
 
   return {

@@ -1,5 +1,4 @@
 import { getProfile, getDatabase } from "@/lib/notion";
-import NotionContent from "@/components/notion/NotionContent";
 
 export default async function ProfilePage() {
   const profile = await getProfile();
@@ -34,8 +33,20 @@ export default async function ProfilePage() {
         </div>
 
         {/* プロフィールコンテンツ */}
-        <div className="prose dark:prose-invert max-w-none mx-auto [&>*]:mx-auto [&>*]:text-center [&_p]:text-center [&_h1]:text-center [&_h2]:text-center [&_h3]:text-center">
-          <NotionContent content={profile.content} />
+        <div className="prose dark:prose-invert max-w-none mx-auto text-center">
+          <p className="text-base text-muted-foreground">{profile.bio}</p>
+          {profile.skills.length > 0 && (
+            <div className="mt-6 flex flex-wrap justify-center gap-2">
+              {profile.skills.map((skill) => (
+                <span
+                  key={skill}
+                  className="inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium"
+                >
+                  {skill}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

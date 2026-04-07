@@ -11,7 +11,7 @@ export const contentType = "image/png";
 
 export default async function Image() {
   const dbInfo = await getDatabase();
-  const title = dbInfo.title || "Classic Blog";
+  const title = dbInfo.title || "Indie_Dev_Media";
   const description = "A classic blog template built with Next.js and Notion";
 
   try {
